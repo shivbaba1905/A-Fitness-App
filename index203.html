@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitness Hub - Full Store System</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:sans-serif; }
+    body { background:#f3f4f6; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+    .app-container { width:390px; height:844px; background:#fff; border:8px solid #581c87; border-radius:40px; position:relative; overflow:hidden; display:flex; flex-direction:column; }
+    .screen-container { flex:1; width:100%; height:calc(100% - 65px); overflow-y:auto; position:relative; }
+    .screen { display:none; flex-direction:column; width:100%; height:100%; padding:20px; }
+    .screen.active { display:flex; }
+    .top-bar { display:flex; flex-direction:column; margin-bottom:15px; background:#fff; flex-shrink:0; }
+    .back-btn { background:none; border:none; font-size:16px; cursor:pointer; color:#1f2937; font-weight:bold; text-align:left; padding:5px 0; }
+    .screen-title { font-size:22px; font-weight:700; text-align:center; border-bottom:1px solid #cbd5e1; padding-bottom:8px; margin-top:5px; }
+    .scroll-content { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:15px; }
+
+    /* होम स्क्रीन */
+    .home-header { display:flex; justify-content:flex-end; width:100%; }
+    .bucket-btn { background:none; border:none; font-size:26px; cursor:pointer; padding:5px; }
+    .avatar { width:80px; height:80px; background:#fef3c7; border:1px solid #d1d5db; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; margin:10px auto; }
+    .streak-container { width:100%; background:#f3e8ff; border:2px solid #581c87; border-radius:18px; padding:14px; margin:10px 0; }
+    .streak-days { display:flex; justify-content:space-between; }
+    .day-dot { display:flex; flex-direction:column; align-items:center; gap:6px; font-size:11px; color:#9ca3af; pointer-events:none; opacity:0.5; font-weight:bold; }
+    .day-dot.unlocked { cursor:pointer; pointer-events:auto; opacity:1; color:#1f2937; }
+    .day-dot .circle { width:28px; height:28px; border-radius:50%; border:1.5px solid #9ca3af; background:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px; }
+    .day-dot.completed .circle { background:#581c87; border-color:#581c87; color:#fff; }
+    .progress-bar-outline { flex:1; height:16px; background:#fff; border:2px solid #ef4444; border-radius:9999px; overflow:hidden; }
+    .progress-fill { height:100%; background:#facc15; width:6.66%; transition:width 0.4s; }
+    .plan-card { background:#e5e7eb; border-radius:18px; padding:16px; text-align:left; }
+    .start-btn { background:#581c87; color:#fff; border:none; font-weight:700; padding:14px; border-radius:30px; cursor:pointer; width:100%; text-align:center; }
+
+    /* वर्कआउट लेवल्स */
+    .level-card { border:3px solid #581c87; border-radius:16px; padding:12px; display:flex; align-items:center; gap:15px; cursor:pointer; background:#fff; margin-bottom:12px; }
+    .level-badge { color:#fff; font-size:11px; padding:4px 8px; border-radius:4px; font-weight:bold; }
+    .single-centered-card { background:#fff; border:4px solid #581c87; width:185px; height:260px; display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; padding:20px 16px; border-radius:24px; margin:auto; }
+    .card-large-box { width:90px; height:90px; border:1px solid #e5e7eb; display:flex; align-items:center; justify-content:center; font-size:46px; background:#f9fafb; border-radius:12px; align-self:center; }
+    .complete-workout-btn { background-color:#10b981; color:white; border:none; padding:12px 0; border-radius:25px; font-size:15px; font-weight:bold; cursor:pointer; width:85%; text-align:center; box-shadow:0 4px 10px rgba(16,185,129,0.2); margin:10px auto; }
+
+    /* डाइट स्क्रीन */
+    .diet-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .diet-goal-card { background:#fff; border:3px solid #581c87; border-radius:16px; padding:12px; cursor:pointer; text-align:left; }
+    .diet-goal-card h3 { font-size:15px; color:#581c87; border-bottom:1px solid #cbd5e1; padding-bottom:4px; margin-bottom:6px; }
+    .meal-card { background:#fff; border:3px solid #581c87; border-radius:16px; padding:15px; text-align:left; }
+    .diet-return-btn { background:#581c87; color:white; border:none; padding:12px; border-radius:25px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px; }
+
+    /* ग्राफ */
+    .graph-board { width:100%; height:260px; display:flex; align-items:flex-end; justify-content:space-between; border-bottom:2px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px; }
+    .graph-bar-wrapper { display:flex; flex-direction:column; align-items:center; flex:1; text-align:center; }
+    .bar-percentage { font-size:11px; font-weight:bold; opacity:0; transition:opacity 0.6s; margin-bottom:6px; }
+    .bar-pillar { width:24px; border-radius:4px 4px 0 0; height:0px; transition:height 0.8s; }
+    .active-graph .bar-percentage { opacity:1; }
+    .active-graph .color-mon { background:#93c5fd; height:100px; } .active-graph .color-tue { background:#22c55e; height:150px; } .active-graph .color-wed { background:#fef08a; height:60px;  } .active-graph .color-thu { background:#22c55e; height:180px; } .active-graph .color-fri { background:#6366f1; height:210px; } .active-graph .color-sat { background:#fba524; height:130px; } .active-graph .color-sun { background:#fff; height:20px; border:1px solid #cbd5e1; }
+
+    /* स्टोर हब ग्रिड */
+    .store-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%; }
+    .store-cat-card { background:#fff; border:3px solid #581c87; border-radius:16px; padding:15px; cursor:pointer; text-align:left; }
+    .store-cat-card h3 { font-size:16px; color:#581c87; font-weight:bold; margin:5px 0; }
+    .store-cat-card p { font-size:12px; color:#6b7280; }
+
+    /* 🛒 स्टोर आइटम्स और न्यू 'Buy' बटन लेआउट */
+    .item-shop-card { background:#fff; border:2px solid #e5e7eb; border-radius:16px; padding:15px; display:flex; flex-direction:column; gap:12px; margin-bottom:12px; box-shadow:0 4px 6px rgba(0,0,0,0.02); }
+    .item-shop-main { display:flex; align-items:center; gap:15px; width:100%; }
+    .item-shop-img { width:55px; height:55px; background:#f9fafb; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:26px; border:1px solid #e5e7eb; }
+    .item-shop-info { display:flex; flex-direction:column; text-align:left; flex:1; }
+    .item-shop-info h4 { font-size:15px; font-weight:bold; color:#1f2937; }
+    .item-shop-info span { font-size:14px; color:#10b981; font-weight:bold; margin-top:2px; }
+    
+    /* 🛠️ कस्टमाइज्ड बाय बटन स्टाइल */
+    .buy-now-btn { background-color:#10b981; color:#fff; border:none; padding:10px; border-radius:20px; font-weight:bold; font-size:13px; cursor:pointer; width:100%; text-align:center; box-shadow:0 3px 8px rgba(16,185,129,0.2); }
+    .buy-now-btn:active { transform:scale(0.98); }
+
+    /* प्रोफाइल स्क्रीन */
+    .profile-info-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin:15px 0; width:100%; }
+    .info-stat-card { background:#f3e8ff; border:2px solid #581c87; border-radius:14px; padding:12px 6px; text-align:center; }
+    .info-stat-card h4 { font-size:16px; color:#581c87; font-weight:700; }
+    .rewards-section { background:#f9fafb; border:1px dashed #581c87; border-radius:18px; padding:16px; width:100%; text-align:center; margin-top:10px; }
+    .rewards-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+    .reward-item { background:#fff; border:2px solid #e5e7eb; border-radius:14px; padding:12px; display:flex; flex-direction:column; align-items:center; opacity:0.4; }
+    .reward-item.earned { border-color:#facc15; opacity:1; background:#fefce8; }
+
+    /* फिक्स बॉटम बार */
+    .bottom-navbar { background:#e5e7eb; border-top:1px solid #d1d5db; padding:10px; display:flex; justify-content:space-around; align-items:center; width:100%; position:absolute; bottom:0; left:0; height:65px; z-index:100; }
+    .nav-item { background:none; border:none; display:flex; flex-direction:column; align-items:center; color:#6b7280; cursor:pointer; font-size:10px; font-weight:600; width:55px; }
+    .nav-item.active { color:#000; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <div class="screen-container">
+
+      <!-- SCREEN 1: HOME -->
+      <div id="home-screen" class="screen active">
+        <div class="home-header"><button class="bucket-btn" onclick="showScreen('store-screen')">🧺</button></div>
+        <div class="scroll-content">
+          <div style="text-align:center;"><div class="avatar" style="margin:auto;">👦</div></div>
+          <div><h1 style="font-size:24px; font-weight:700;">Hi Archit kumar</h1><p style="font-size:15px; color:#4b5563;">Your Today Goal is 1800 kcal</p></div>
+          <div class="streak-container">
+            <div id="streak-header-text" style="font-size:14px; font-weight:bold; color:#581c87; margin-bottom:10px;">🔥 Challenge: Click "1"</div>
+            <div class="streak-days">
+              <div id="day-1" class="day-dot unlocked" onclick="loadChallengeLevels()"><div class="circle">1</div><span>Mon</span></div>
+              <div id="day-2" class="day-dot" onclick="loadChallengeLevels()"><div class="circle">2</div><span>Tue</span></div>
+              <div id="day-3" class="day-dot" onclick="loadChallengeLevels()"><div class="circle">3</div><span>Wed</span></div>
+              <div id="day-4" class="day-dot" onclick="loadChallengeLevels()"><div class="circle">4</div><span>Thu</span></div>
+              <div id="day-5" class="day-dot" onclick="loadChallengeLevels()"><div class="circle">5</div><span>Fri</span></div>
+              <div id="day-6" class="day-dot" onclick="loadChallengeLevels()"><div class="circle">6</div><span>Sat</span></div>
+              <div id="day-7" class="day-dot" onclick="loadChallengeLevels()"><div class="circle">7</div><span>Sun</span></div>
+            </div>
+          </div>
+          <div class="progress-section">
+            <div style="display:flex; align-items:center; gap:8px;"><span>👦</span><div class="progress-bar-outline"><div id="main-progress" class="progress-fill"></div></div></div>
+          </div>
+          <div class="plan-card"><h3>Today Plan</h3><p id="home-plan-text">• Day 1 challenge or choose tabs below!</p></div>
+          <button class="start-btn" onclick="loadChallengeLevels()">Start Workout</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: WORKOUT DIFFICULTY -->
+      <div id="level-screen" class="screen">
+        <div class="top-bar"><button class="back-btn" onclick="switchMainTab('home-screen')">← Back</button><h1 class="screen-title">Select Challenge Level</h1></div>
+        <div id="level-card-container" class="scroll-content"></div>
+      </div>
+
+      <!-- SCREEN 3: ACTIVE WORKOUT CARD -->
+      <div id="detail-screen" class="screen">
+        <div class="top-bar"><button class="back-btn" onclick="showScreen('level-screen')">← Back</button><h1 class="screen-title">Active Workout</h1></div>
+        <div class="workout-detail-layout">
+          <div class="single-centered-card">
+            <div id="dynamic-emoji" class="card-large-box animate-pushup">🧎‍♂️</div>
+            <h3 id="dynamic-title">Workout</h3>
+            <span id="dynamic-target" style="font-weight:bold; font-size:16px; color:#1f2937;">0/0</span>
+          </div>
+          <button class="complete-workout-btn" onclick="finishCurrentWorkout()">Workout Complete 🎉</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: DIET GOALS -->
+      <div id="diet-screen" class="screen">
+        <div class="top-bar"><button class="back-btn" onclick="switchMainTab('home-screen')">← Back</button><h1 class="screen-title">Diet Plan Goals</h1></div>
+        <div class="scroll-content">
+          <div class="diet-grid">
+            <div class="diet-goal-card" onclick="loadMealPlan('weight')"><h3>Weight Loss</h3><ul><li>• Deficit Meals</li><li>• Fiber High</li></ul></div>
+            <div class="diet-goal-card" onclick="loadMealPlan('surplus')"><h3>Muscle Surplus</h3><ul><li>• Category Surplus</li><li>• High Protein</li></ul></div>
+            <div class="diet-goal-card" onclick="loadMealPlan('balanced')"><h3>Muscle Balanced</h3><ul><li>• Balanced Intake</li><li>• Stable Carbs</li></ul></div>
+            <div class="diet-goal-card" onclick="loadMealPlan('treat')"><h3>Treat Day</h3><ul><li>• Cheat Once</li><li>• Hydration</li></ul></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 5: DETAILED MEAL TIMELINE -->
+      <div id="meal-screen" class="screen">
+        <div class="top-bar"><button class="back-btn" onclick="showScreen('diet-screen')">← Diet Hub</button><h1 id="meal-screen-title" class="screen-title">Your Meals</h1></div>
+        <div id="meal-list-container" class="scroll-content"></div>
+      </div>
+
+      <!-- SCREEN 6: PROGRESS BAR GRAPH -->
+      <div id="progress-screen" class="screen">
+        <div class="top-bar"><button class="back-btn" onclick="switchMainTab('home-screen')">← Back</button><h1 class="screen-title">Bar Graph</h1></div>
+        <div class="scroll-content">
+          <div id="animated-graph-board" class="graph-container">
+            <div class="graph-board">
+              <div class="graph-bar-wrapper"><span class="bar-percentage">38%</span><div class="bar-pillar color-mon"></div><span style="font-size:11px; font-weight:bold; margin-top:10px; color:#ef4444;">Mon</span></div>
+              <div class="graph-bar-wrapper"><span class="bar-percentage">62%</span><div class="bar-pillar color-tue"></div><span style="font-size:11px; font-weight:bold; margin-top:10px; color:#3b82f6;">Tue</span></div>
+              <div class="graph-bar-wrapper"><span class="bar-percentage">20%</span><div class="bar-pillar color-wed"></div><span style="font-size:11px; font-weight:bold; margin-top:10px; color:#06b6d4;">Wed</span></div>
+              <div class="graph-bar-wrapper"><span class="bar-percentage">69%</span><div class="bar-pillar color-thu"></div><span style="font-size:11px; font-weight:bold; margin-top:10px; color:#eab308;">Thu</span></div>
+              <div class="graph-bar-wrapper"><span class="bar-percentage">82%</span><div class="bar-pillar color-fri"></div><span style="font-size:11px; font-weight:bold; margin-top:10px; color:#a855f7;">Fri</span></div>
+              <div class="graph-bar-wrapper"><span class="bar-percentage">52%</span><div class="bar-pillar color-sat"></div><span style="font-size:11px; font-weight:bold; margin-top:10px; color:#10b981;">Sat</span></div>
+              <div class="graph-bar-wrapper"><span class="bar-percentage">0%</span><div class="bar-pillar color-sun"></div><span style="font-size:11px; font-weight:bold; margin-top:10px; color:#6b7280;">Sun</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 7: FITNESS STORE HUB -->
+      <div id="store-screen" class="screen">
+        <div class="top-bar"><button class="back-btn" onclick="switchMainTab('home-screen')">← Back</button><h1 class="screen-title">Fitness Store</h1></div>
+        <div class="scroll-content">
+          <div class="store-grid">
+            <div class="store-cat-card" onclick="loadStoreItems('equip')"><span>🏋️‍♂️</span><h3>Equipment</h3><p>Dumbbells, Bands...</p></div>
+            <div class="store-cat-card" onclick="loadStoreItems('supps')"><span>🥛</span><h3>Supplements</h3><p>Protein, Creatine...</p></div>
+            <div class="store-cat-card" onclick="loadStoreItems('wear')"><span>👟</span><h3>Active Wear</h3><p>Shoes, Shirts...</p></div>
+            <div class="store-cat-card" onclick="loadStoreItems('gadget')"><span>⌚</span><h3>Smart Band</h3><p>Fitness Bands...</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DYNAMIC STORE ITEM LIST -->
+      <div id="store-item-screen" class="screen">
+        <div class="top-bar"><button class="back-btn" onclick="showScreen('store-screen')">← Store Hub</button><h1 id="store-item-title" class="screen-title">Products</h1></div>
+        <div id="store-item-container" class="scroll-content"></div>
+      </div>
+
+      <!-- SCREEN 9: USER PROFILE & REWARDS -->
+      <div id="profile-screen" class="screen">
+        <div class="top-bar"><button class="back-btn" onclick="switchMainTab('home-screen')">← Back</button><h1 class="screen-title">My Profile</h1></div>
+        <div class="scroll-content" style="align-items:center;">
+          <div class="avatar">👦</div>
+          <h2 style="font-size:22px; font-weight:700;">Archit kumar</h2>
+          <div class="profile-info-grid">
+            <div class="info-stat-card"><h4>22 Yrs</h4><span>Age</span></div>
+            <div class="info-stat-card"><h4>68 Kg</h4><span>Weight</span></div>
+            <div class="info-stat-card"><h4>174 cm</h4><span>Height</span></div>
+          </div>
+          <div class="rewards-section">
+            <h3 style="font-size:15px; font-weight:bold; color:#581c87;">🏆 Your Earned Rewards</h3>
+            <div class="rewards-grid">
+              <div id="reward-mon" class="reward-item"><span style="font-size:28px;">🥇</span><span>Day 1 Medal</span></div>
+              <div class="reward-item"><span style="font-size:28px;">🥈</span><span>Day 3 Badge</span></div>
+              <div class="reward-item"><span style="font-size:28px;">👑</span><span>Streak King</span></div>
+              <div class="reward-item"><span style="font-size:28px;">🏆</span><span>Champion Trophy</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 5-टैब बॉटम बार बार -->
+    <div class="bottom-navbar">
+      <button id="nav-home" class="nav-item active" onclick="switchMainTab('home-screen')"><span>🏠</span>Home</button>
+      <button id="nav-workout" class="nav-item" onclick="switchMainTab('level-screen'); loadChallengeLevels();"><span>🏋️‍♂️</span>Workout</button>
+      <button id="nav-diet" class="nav-item" onclick="switchMainTab('diet-screen')"><span>🍏</span>Diet</button>
+      <button id="nav-progress" class="nav-item" onclick="switchMainTab('progress-screen')"><span>📈</span>Progress</button>
+      <button id="nav-store" class="nav-item" onclick="switchMainTab('store-screen')"><span>🛒</span>Store</button>
+      <button id="nav-profile" class="nav-item" onclick="switchMainTab('profile-screen')"><span>👤</span>Profile</button>
+    </div>
+  </div>
+</body>
+<script>
+    let currentActiveDay = 1, totalBurnedKcal = 120;
+    
+    const dietDatabase = {
+      weight: { title: "Weight Loss Diet", meals: [{ mType: "Breakfast", mTime: "6:30 AM", mItems: "• Daliya, Black Coffee" }, { mType: "Lunch", mTime: "1:30 PM", mItems: "• Brown Rice, Paneer, Salad" }] },
+      surplus: { title: "Muscle Surplus Diet", meals: [{ mType: "Breakfast", mTime: "7:30 AM", mItems: "• Oats, Milk, Almonds" }, { mType: "Lunch", mTime: "1:30 PM", mItems: "• Roti, Rice, Dal, Sabzi" }] },
+      balanced: { title: "Muscle Balanced Diet", meals: [{ mType: "Breakfast", mTime: "7:30 AM", mItems: "• Oats, Milk, Fruits" }, { mType: "Lunch", mTime: "2:00 PM", mItems: "• Roti, Dal, Veg Salad" }] },
+      treat: { title: "Treat Day Rules", meals: [{ mType: "Cheat Meal", mTime: "Flexible", mItems: "• Favorite cheat meal allowed once a week. Stay hydrated!" }] }
+    };
+
+    const storeDatabase = {
+      equip: { title: "Gym Equipment", items: [{ n: "Adjustable Dumbbells", p: "₹2,499", i: "🏋️‍♂️" }, { n: "Resistance Bands Set", p: "₹499", i: "🎗️" }] },
+      supps: { title: "Supplements", items: [{ n: "100% Whey Protein", p: "₹1,899", i: "🥛" }, { n: "Creatine Monohydrate", p: "₹549", i: "⚡" }] },
+      wear: { title: "Active Wear", items: [{ n: "Running Sports Shoes", p: "₹1,299", i: "👟" }, { n: "Dry-Fit Gym Shirt", p: "₹399", i: "👕" }] },
+      gadget: { title: "Smart Gadgets", items: [{ n: "Smart Fitness Band", p: "₹1,999", i: "⌚" }] }
+    };
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = "none"; });
+      const t = document.getElementById(id); if(t) { t.classList.add('active'); t.style.display = "flex"; }
+      
+      const graphBoard = document.getElementById('animated-graph-board');
+      if(graphBoard) {
+        if (id === 'progress-screen') { setTimeout(() => { graphBoard.classList.add('active-graph'); }, 50); }
+        else { graphBoard.classList.remove('active-graph'); }
+      }
+    }
+
+    function switchMainTab(id) {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      if(id==='home-screen') document.getElementById('nav-home').classList.add('active');
+      if(id==='level-screen') document.getElementById('nav-workout').classList.add('active');
+      if(id==='diet-screen') document.getElementById('nav-diet').classList.add('active');
+      if(id==='progress-screen') document.getElementById('nav-progress').classList.add('active');
+      if(id==='store-screen') document.getElementById('nav-store').classList.add('active');
+      if(id==='profile-screen') document.getElementById('nav-profile').classList.add('active');
+      showScreen(id);
+    }
+
+    function loadChallengeLevels() {
+      document.getElementById('level-card-container').innerHTML = `
+        <div class="level-card" onclick="loadFinalCard('Knee-Push-ups', '🤸‍♂️', '10×3')"><div class="level-img">🤸‍♂️</div><div class="level-info"><span class="level-badge" style="background:#581c87;">Beginner</span><h3>Knee-Push-ups</h3><span>Target: 10×3</span></div></div>
+        <div class="level-card" onclick="loadFinalCard('Normal-Push-ups', '🧎‍♂️', '12×3')"><div class="level-img">🧎‍♂️</div><div class="level-info"><span class="level-badge" style="background:#d97706;">Intermediate</span><h3>Normal-Push-ups</h3><span>Target: 12×3</span></div></div>
+        <div class="level-card" onclick="loadFinalCard('Diamond-Push-ups', '💪', '10×4')"><div class="level-img">💪</div><div class="level-info"><span class="level-badge" style="background:#dc2626;">Advanced</span><h3>Diamond-Push-ups</h3><span>Target: 10×4</span></div></div>`;
+      showScreen('level-screen');
+    }
+
+    function loadFinalCard(title, emoji, target) {
+      document.getElementById('dynamic-title').innerText = title.replace("-", "-\n");
+      document.getElementById('dynamic-emoji').innerText = emoji;
+      document.getElementById('dynamic-target').innerText = target;
+      showScreen('detail-screen');
+    }
+
+    function finishCurrentWorkout() {
+      const b = document.getElementById('day-' + currentActiveDay);
+      if(b) { b.classList.remove('unlocked'); b.querySelector('.circle').innerText = "✓"; b.classList.add('completed'); }
+      totalBurnedKcal += 240; if(totalBurnedKcal > 1800) totalBurnedKcal = 1800;
+      document.getElementById('main-progress').style.width = (totalBurnedKcal / 1800) * 100 + "%";
+      
+      if(currentActiveDay === 1) {
+        const r = document.getElementById('reward-mon'); if(r) r.classList.add('earned');
+      }
+
+      currentActiveDay++;
+      if (currentActiveDay <= 7) {
+        const n = document.getElementById('day-' + currentActiveDay); if(n) n.classList.add('unlocked');
+        document.getElementById('streak-header-text').innerHTML = "<span>🔥</span> Challenge: Click \"" + currentActiveDay + "\"";
+      }
+      switchMainTab('home-screen');
+    }
+
+    function loadMealPlan(key) {
+      const p = dietDatabase[key]; document.getElementById('meal-screen-title').innerText = p.title;
+      const c = document.getElementById('meal-list-container'); c.innerHTML = "";
+      let layoutBox = document.createElement('div'); layoutBox.className = "meal-layout-box";
+      p.meals.forEach(m => {
+        let card = document.createElement('div'); card.className = "meal-card";
+        card.innerHTML = `<div class="meal-header"><span>${m.mType}</span><span style="color:#6b7280;">Time: ${m.mTime}</span></div><p style="font-size:14px; color:#1f2937; font-weight:500;">${m.mItems}</p>`;
+        layoutBox.appendChild(card);
+      });
+      let returnBtn = document.createElement('button'); returnBtn.className = "diet-return-btn"; returnBtn.innerText = "Back to Diet Goals 🍏";
+      returnBtn.onclick = function() { showScreen('diet-screen'); };
+      layoutBox.appendChild(returnBtn); c.appendChild(layoutBox);
+      showScreen('meal-screen');
+    }
+
+    // 🛠️ कस्टमाइज्ड 'Buy Now' बटन के साथ स्टोर लोड फंक्शन
+    function loadStoreItems(key) {
+      const cat = storeDatabase[key];
+      document.getElementById('store-item-title').innerText = cat.title;
+      const container = document.getElementById('store-item-container');
+      container.innerHTML = "";
+      
+      cat.items.forEach(item => {
+        let card = document.createElement('div');
+        card.className = "item-shop-card";
+        card.innerHTML = `
+          <div class="item-shop-main">
+            <div class="item-shop-img">${item.i}</div>
+            <div class="item-shop-info"><h4>${item.n}</h4><span>${item.p}</span></div>
+          </div>
+          <button class="buy-now-btn" onclick="alert('Order Placed Successfully for ${item.n}! 🎉')">Buy Now 🛒</button>
+        `;
+        container.appendChild(card);
+      });
+      showScreen('store-item-screen');
+    }
+</script>
+</html>
