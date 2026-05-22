@@ -7,7 +7,7 @@ A comprehensive mobile UI/UX design crafted to help users track workouts, plan m
 ## 🚀 Case Study Links
 *    **https://www.figma.com/proto/UZ1Z8qGdeh9HriMZGp4O40/fitness-app?node-id=0-1**
 *    **https://www.figma.com/design/UZ1Z8qGdeh9HriMZGp4O40/fitness-app?node-id=0-1&p=f&t=e6VyzM6EzNV9zUZM-0**
-*    ****
+*    **https://chic-platypus-aa3b52.netlify.app/**
 
 ---
 
